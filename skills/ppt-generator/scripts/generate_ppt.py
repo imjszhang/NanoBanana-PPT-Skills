@@ -11,12 +11,6 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-# 添加 skills 脚本目录到路径，以便导入 comfyui_client
-SCRIPT_DIR = Path(__file__).parent
-SKILLS_SCRIPTS_DIR = SCRIPT_DIR / "skills" / "ppt-generator" / "scripts"
-if SKILLS_SCRIPTS_DIR.exists():
-    sys.path.insert(0, str(SKILLS_SCRIPTS_DIR))
-
 
 def load_style_template(style_path):
     """加载风格模板"""
@@ -160,12 +154,13 @@ def generate_slide_comfyui(prompt, slide_number, output_dir, comfyui_config):
 
 def get_default_workflow_path():
     """获取默认工作流路径"""
+    # 尝试多个可能的路径
     script_dir = Path(__file__).parent
     possible_paths = [
-        # 项目根目录的工作流
-        script_dir / "comfyui-workflows" / "image_z_image_turbo.json",
         # skills 目录下的工作流
-        script_dir / "skills" / "ppt-generator" / "assets" / "workflows" / "z_image_turbo_16x9.json",
+        script_dir.parent / "assets" / "workflows" / "z_image_turbo_16x9.json",
+        # 项目根目录的工作流
+        script_dir.parent.parent.parent / "comfyui-workflows" / "image_z_image_turbo.json",
         # 相对于当前工作目录
         Path("comfyui-workflows") / "image_z_image_turbo.json",
         Path("skills/ppt-generator/assets/workflows/z_image_turbo_16x9.json"),
