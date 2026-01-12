@@ -417,6 +417,32 @@ open outputs/TIMESTAMP/index.html
 
 ### 高级使用：生成带转场视频的 PPT
 
+**重要说明：转场视频需要先生成转场提示词！**
+
+有两种方式生成转场提示词：
+
+#### 方式一：使用 Claude Code 分析图片（推荐）
+
+在 Claude Code 中，让它分析生成的 PPT 图片：
+
+```
+我刚生成了 5 页 PPT 图片在 outputs/TIMESTAMP/images 目录下。
+请帮我分析这些图片，为每个页面转场生成视频提示词，
+保存为 outputs/TIMESTAMP/transition_prompts.json
+```
+
+Claude Code 会：
+1. 读取所有 PPT 图片
+2. 分析每两页之间的视觉差异
+3. 生成精准的转场描述
+4. 保存为 JSON 文件
+
+#### 方式二：使用通用模板（快速但不够精准）
+
+如果不提供 `--prompts-file`，系统会使用通用的转场模板。
+
+---
+
 #### 1. 生成 PPT 图片（同上）
 
 ```bash
@@ -426,7 +452,22 @@ python3 generate_ppt.py \
   --resolution 2K
 ```
 
-#### 2. 生成转场视频
+#### 2. 生成转场提示词（推荐：使用 Claude Code）
+
+在 Claude Code 中执行上述提示，或者跳过此步骤使用通用模板。
+
+#### 3. 生成转场视频
+
+**如果有 Claude Code 生成的提示词文件：**
+
+```bash
+python3 generate_ppt_video.py \
+  --slides-dir outputs/TIMESTAMP/images \
+  --output-dir outputs/TIMESTAMP_video \
+  --prompts-file outputs/TIMESTAMP/transition_prompts.json
+```
+
+**如果使用通用模板：**
 
 ```bash
 python3 generate_ppt_video.py \
@@ -438,8 +479,9 @@ python3 generate_ppt_video.py \
 - 首页循环预览视频
 - 每个页面间的转场视频
 - 交互式视频播放器 HTML
+- 完整视频 (full_ppt_video.mp4)
 
-#### 3. 播放交互式视频 PPT
+#### 4. 播放交互式视频 PPT
 
 ```bash
 open outputs/TIMESTAMP_video/video_index.html
