@@ -1,4 +1,4 @@
-# PPT Generator Pro
+# NanoBanana PPT Skills
 
 > 基于 AI 自动生成高质量 PPT 图片和视频的强大工具，支持智能转场和交互式播放
 
@@ -18,7 +18,7 @@
 
 ## 📖 简介
 
-PPT Generator Pro 是一个强大的 AI 驱动的 PPT 生成工具，能够：
+NanoBanana PPT Skills 是一个强大的 AI 驱动的 PPT 生成工具，能够：
 
 - 📄 **智能分析文档**，自动提取核心要点并规划 PPT 结构
 - 🎨 **生成高质量图片**，使用 Google Nano Banana Pro（Gemini 3 Pro Image Preview）
@@ -78,21 +78,21 @@ PPT Generator Pro 是一个强大的 AI 驱动的 PPT 生成工具，能够：
 
 ### 方法一：Claude Code 自动安装（推荐）
 
-**复制以下提示词，发送给 Claude Code，即可完成全自动安装：**
+**只需复制以下提示词，发送给 Claude Code，它会自动完成全部安装！**
 
 ```
-请帮我安装 PPT Generator Pro：
+请帮我安装 NanoBanana PPT Skills：
 
 1. 克隆项目并进入目录：
-   git clone https://github.com/op7418/ppt-generator-pro.git
-   cd ppt-generator-pro
+   git clone https://github.com/op7418/NanoBanana-PPT-Skills.git
+   cd NanoBanana-PPT-Skills
 
 2. 创建 Python 虚拟环境：
    python3 -m venv venv
    source venv/bin/activate  # Windows: venv\Scripts\activate
 
 3. 安装依赖：
-   pip install google-genai pillow
+   pip install google-genai pillow python-dotenv
 
 4. 配置 API 密钥 - 创建 .env 文件：
    cp .env.example .env
@@ -118,13 +118,14 @@ PPT Generator Pro 是一个强大的 AI 驱动的 PPT 生成工具，能够：
 - KLING_SECRET_KEY: YOUR_KLING_SECRET_KEY_HERE (可选)
 ```
 
-**使用步骤**：
-1. 复制上面的提示词
-2. 替换 API 密钥：
+**使用说明**：
+1. 先获取 API 密钥：
    - **必需**: [Google AI API 密钥](https://aistudio.google.com/apikey)
    - **可选**: [可灵 AI API 密钥](https://klingai.com)（用于视频转场功能）
-3. 发送给 Claude Code
-4. 等待自动安装完成
+2. 复制上面的提示词
+3. 将 `YOUR_GEMINI_API_KEY_HERE` 等替换为你的真实 API 密钥
+4. 发送给 Claude Code
+5. Claude Code 会自动执行所有安装步骤并告知结果
 
 ### 方法二：手动安装
 
@@ -133,8 +134,8 @@ PPT Generator Pro 是一个强大的 AI 驱动的 PPT 生成工具，能够：
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/op7418/ppt-generator-pro.git
-cd ppt-generator-pro
+git clone https://github.com/op7418/NanoBanana-PPT-Skills.git
+cd NanoBanana-PPT-Skills
 ```
 
 #### 2. 创建虚拟环境
@@ -210,16 +211,54 @@ python3 generate_ppt.py --help
 
 ## 🎯 作为 Claude Code Skill 使用
 
-PPT Generator Pro 完全支持 Claude Code Skill 标准，可以直接通过 Claude Code 调用。
+NanoBanana PPT Skills 完全支持 Claude Code Skill 标准，可以直接通过 Claude Code 调用。
 
 ### 快速安装为 Skill
 
-**方法一：自动安装脚本（推荐）**
+**方法一：Claude Code 自动安装为 Skill（最简单）**
+
+**只需复制以下提示词，发送给 Claude Code，它会自动完成 Skill 安装！**
+
+```
+请帮我将 NanoBanana PPT Skills 安装为 Claude Code Skill：
+
+1. 创建 Skill 目录：
+   mkdir -p ~/.claude/skills/ppt-generator
+
+2. 克隆项目到 Skill 目录：
+   git clone https://github.com/op7418/NanoBanana-PPT-Skills.git ~/.claude/skills/ppt-generator
+
+3. 进入目录并安装依赖：
+   cd ~/.claude/skills/ppt-generator
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install google-genai pillow python-dotenv
+
+4. 配置 API 密钥：
+   cp .env.example .env
+
+   然后编辑 .env 文件，填入我的 API 密钥：
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+   KLING_ACCESS_KEY=YOUR_KLING_ACCESS_KEY
+   KLING_SECRET_KEY=YOUR_KLING_SECRET_KEY
+
+5. 验证安装：
+   python3 generate_ppt.py --help
+
+完成后，告诉我如何在 Claude Code 中使用这个 Skill。
+
+我的 API 密钥：
+- GEMINI_API_KEY: YOUR_GEMINI_API_KEY_HERE
+- KLING_ACCESS_KEY: YOUR_KLING_ACCESS_KEY_HERE (可选)
+- KLING_SECRET_KEY: YOUR_KLING_SECRET_KEY_HERE (可选)
+```
+
+**方法二：使用安装脚本**
 
 ```bash
 # 克隆项目
-git clone https://github.com/op7418/ppt-generator-pro.git
-cd ppt-generator-pro
+git clone https://github.com/op7418/NanoBanana-PPT-Skills.git
+cd NanoBanana-PPT-Skills
 
 # 运行安装脚本
 bash install_as_skill.sh
@@ -231,14 +270,14 @@ bash install_as_skill.sh
 3. 安装 Python 依赖
 4. 引导配置 API 密钥
 
-**方法二：手动安装**
+**方法三：手动安装**
 
 ```bash
 # 1. 创建 Skill 目录
 mkdir -p ~/.claude/skills/ppt-generator
 
 # 2. 克隆项目到 Skill 目录
-git clone https://github.com/op7418/ppt-generator-pro.git ~/.claude/skills/ppt-generator
+git clone https://github.com/op7418/NanoBanana-PPT-Skills.git ~/.claude/skills/ppt-generator
 
 # 3. 安装依赖
 cd ~/.claude/skills/ppt-generator
@@ -536,7 +575,7 @@ composer.compose_full_ppt_video(
 ## 📚 项目结构
 
 ```
-ppt-generator-pro/
+ppt-generator/
 ├── README.md                      # 本文件
 ├── API_MANAGEMENT.md              # API 密钥管理指南
 ├── ENV_SETUP.md                   # 环境变量配置指南
@@ -742,7 +781,7 @@ git status
 
 ### 报告问题
 
-在 [GitHub Issues](https://github.com/op7418/ppt-generator-pro/issues) 提交问题，请包含：
+在 [GitHub Issues](https://github.com/op7418/NanoBanana-PPT-Skills/issues) 提交问题，请包含：
 - 错误信息
 - 操作步骤
 - 系统环境
@@ -789,7 +828,7 @@ SOFTWARE.
 
 - **创作者**: 歸藏
 - **GitHub**: [@op7418](https://github.com/op7418)
-- **Issues**: [GitHub Issues](https://github.com/op7418/ppt-generator-pro/issues)
+- **Issues**: [GitHub Issues](https://github.com/op7418/NanoBanana-PPT-Skills/issues)
 
 ---
 
