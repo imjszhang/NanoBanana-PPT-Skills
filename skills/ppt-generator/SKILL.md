@@ -1,7 +1,7 @@
 ---
 name: ppt-generator
-description: 此技能应在用户需要基于文档内容自动生成专业 PPT 图片时使用。支持智能文档分析、多种视觉风格（渐变毛玻璃卡片、矢量插画）、16:9 高清输出和 HTML5 播放器。支持 Gemini 和 ComfyUI 两种图片生成引擎。
-version: 1.1.0
+description: 此技能应在用户需要基于文档内容自动生成专业 PPT 图片或视频时使用。支持智能文档分析、多种视觉风格（渐变毛玻璃卡片、矢量插画）、16:9 高清输出。图片支持 Gemini 和 ComfyUI 引擎，视频支持可灵 API 生成过渡动效和 FFmpeg 合成完整视频。
+version: 2.0.0
 author: 歸藏 (guizang)
 license: MIT
 ---
@@ -10,10 +10,17 @@ license: MIT
 
 ## 概述
 
-PPT Generator 是一个强大的文档到演示文稿转换技能，能够智能分析文档内容，自动生成专业的 PPT 图片。支持两种图片生成引擎：
+PPT Generator 是一个强大的文档到演示文稿转换技能，能够智能分析文档内容，自动生成专业的 PPT 图片和视频。
+
+### 图片生成引擎
 
 - **Gemini (Nano Banana Pro)** - Google Gemini 3 Pro Image Preview 模型
 - **ComfyUI** - 本地部署的 Stable Diffusion 工作流（支持 z_image_turbo 等模型）
+
+### 视频生成引擎
+
+- **可灵 (Kling) API** - 图生视频，支持首尾帧控制，生成过渡动效
+- **FFmpeg** - 视频合成，将静态图片和过渡视频拼接为完整 PPT 视频
 
 支持多种视觉风格，生成 16:9 高清 PPT，并附带优雅的 HTML5 播放器。
 
@@ -25,6 +32,9 @@ PPT Generator 是一个强大的文档到演示文稿转换技能，能够智能
 - **智能布局** - 封面页、内容页、数据页自动识别
 - **HTML5 播放器** - 支持键盘导航、全屏、自动播放
 - **双引擎支持** - Gemini 云端 API 或 ComfyUI 本地生成
+- **视频生成** - 可灵 API 生成页面过渡动效（首尾帧控制）
+- **视频合成** - FFmpeg 将图片和过渡视频合成完整 PPT 视频
+- **视频播放器** - 支持过渡动效的 HTML5 视频播放器
 
 ## 触发场景
 
@@ -34,17 +44,27 @@ PPT Generator 是一个强大的文档到演示文稿转换技能，能够智能
 2. 用户提供文档并要求转换为演示材料
 3. 用户提到使用 Nano Banana Pro 或 ComfyUI 生成图片
 4. 用户需要将内容可视化为演示格式
+5. 用户请求生成 PPT 视频或带转场动效的演示
+6. 用户需要将 PPT 图片转换为视频
+7. 用户提到使用可灵 API 生成过渡视频
 
 ## 系统要求
 
 ### 环境变量
 
 ```bash
-# Gemini 引擎（使用 --engine gemini 时必需）
+# 图片生成 - Gemini 引擎（使用 --engine gemini 时必需）
 GEMINI_API_KEY=your-google-ai-api-key
 
-# ComfyUI 引擎（可选，默认 http://127.0.0.1:8188）
+# 图片生成 - ComfyUI 引擎（可选，默认 http://127.0.0.1:8188）
 COMFYUI_SERVER_URL=http://127.0.0.1:8188
+
+# 视频生成 - 可灵 API（生成视频时必需）
+Kling_Access_Key=your-kling-access-key
+Kling_Secret_Key=your-kling-secret-key
+
+# 视频生成 - Claude API（完整版转场提示词，可选）
+ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
 ### Python 依赖
@@ -53,7 +73,26 @@ COMFYUI_SERVER_URL=http://127.0.0.1:8188
 # Gemini 引擎
 pip install google-genai pillow
 
+# 可灵视频 API
+pip install pyjwt requests
+
 # ComfyUI 引擎（无额外依赖，使用标准库）
+```
+
+### 系统依赖
+
+```bash
+# FFmpeg（视频合成必需）
+# Windows
+choco install ffmpeg
+# 或
+scoop install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Linux
+apt install ffmpeg
 ```
 
 ### ComfyUI 模型准备
@@ -97,9 +136,14 @@ ComfyUI/models/
    - 2K (1920x1080)：推荐，平衡质量和生成速度
    - 4K (3840x2160)：高质量，生成耗时较长
 
-5. **选择生成引擎**（新增）
+5. **选择图片生成引擎**
    - `gemini` - 使用 Google Gemini API（默认）
    - `comfyui` - 使用本地 ComfyUI 服务
+
+6. **选择输出类型**（新增）
+   - `images` - 仅生成 PPT 图片
+   - `video` - 仅生成视频（需要先有图片）
+   - `both` - 生成图片和视频
 
 ### 阶段 2：文档分析与内容规划
 
@@ -215,7 +259,7 @@ python scripts/generate_ppt.py \
   --size-node 3
 ```
 
-#### 参数说明
+#### 图片生成参数说明
 
 基础参数：
 - `--plan`: slides 规划 JSON 文件路径
@@ -234,12 +278,76 @@ ComfyUI 参数：
 - `--size-node`: 尺寸节点 ID（默认 41）
 - `--timeout`: 生成超时时间，秒（默认 600）
 
-### 阶段 4：返回结果
+### 阶段 4：生成转场提示词（视频）
+
+如果用户选择生成视频，此阶段分析每两页之间的差异，生成转场动效描述。
+
+**提示词生成方式：**
+- **完整版**（需要 Claude API）：使用 Claude 分析首尾帧图片，智能生成转场描述
+- **简化版**（无需 API）：使用预定义的转场模板
+
+```python
+# 完整版（Claude API）
+from scripts.transition_prompt_generator import TransitionPromptGenerator
+generator = TransitionPromptGenerator()
+
+# 简化版（预定义模板）
+from scripts.simple_transition_prompt_generator import SimpleTransitionPromptGenerator
+generator = SimpleTransitionPromptGenerator()
+
+# 从文件读取（用户自定义）
+from scripts.prompt_file_reader import PromptFileReader
+generator = PromptFileReader("prompts.json")
+```
+
+### 阶段 5：生成视频素材（视频）
+
+使用可灵 API 生成预览视频和过渡视频。
+
+```bash
+python scripts/generate_ppt_video.py \
+  --slides-dir outputs/xxx/images \
+  --output-dir outputs/xxx_video \
+  --video-mode both \
+  --video-duration 5 \
+  --video-quality pro \
+  --max-concurrent 3
+```
+
+**视频生成参数说明：**
+
+- `--slides-dir`: PPT 图片目录（包含 slide-01.png, slide-02.png 等）
+- `--output-dir`: 输出目录
+- `--video-mode`: 输出模式
+  - `both` - 本地视频 + 网页播放器（默认）
+  - `local` - 仅本地视频文件
+  - `web` - 仅网页播放器
+- `--video-duration`: 过渡视频时长（5 或 10 秒）
+- `--slide-duration`: 每页停留时长（秒，默认 5）
+- `--video-quality`: 视频质量
+  - `std` - 标准质量
+  - `pro` - 高品质（首尾帧必需，默认）
+- `--max-concurrent`: 最大并发数（默认 3，可灵 API 限制）
+- `--skip-preview`: 跳过预览视频生成
+- `--prompts-file`: 自定义提示词文件路径
+
+### 阶段 6：合成完整视频（视频）
+
+使用 FFmpeg 将静态图片和过渡视频合成为完整的 PPT 视频。
+
+**合成流程：**
+1. 将每页 PPT 图片转换为静态视频片段（指定停留时长）
+2. 按顺序拼接：过渡视频 → 静态视频 → 过渡视频 → 静态视频...
+3. 统一分辨率和帧率（1920x1080, 24fps）
+4. 输出 H.264 编码的 MP4 文件
+
+### 阶段 7：返回结果
 
 生成完成后，向用户报告：
 
+**图片生成结果：**
 ```
-✅ PPT 生成成功！
+✅ PPT 图片生成成功！
 
 📁 输出目录: outputs/[timestamp]/
 🎬 播放网页: outputs/[timestamp]/index.html
@@ -252,6 +360,22 @@ ComfyUI 参数：
 - 空格: 暂停/继续自动播放
 - ESC: 全屏切换
 - H: 隐藏/显示控件
+```
+
+**视频生成结果：**
+```
+✅ PPT 视频生成成功！
+
+📁 输出目录: outputs/[timestamp]_video/
+🎬 完整视频: outputs/[timestamp]_video/full_ppt_video.mp4
+🌐 网页播放器: outputs/[timestamp]_video/video_index.html
+📹 视频素材: outputs/[timestamp]_video/videos/
+📝 元数据: outputs/[timestamp]_video/videos/video_metadata.json
+
+生成统计:
+- PPT 页数: N
+- 视频素材: X 成功, Y 失败
+- 总耗时: Z 秒
 ```
 
 ## 风格说明
@@ -307,9 +431,28 @@ ComfyUI 参数：
 - ComfyUI GUI 格式（包含 nodes 数组）- 自动转换
 - ComfyUI API 格式（节点 ID 为 key）- 直接使用
 
+## 可灵视频 API 说明
+
+### 模型选择
+
+- `kling-v2-6` - 推荐，支持首尾帧控制
+
+### 生成模式
+
+- `std` - 标准模式，消耗较少
+- `pro` - 高品质模式，首尾帧控制必需
+
+### 并发限制
+
+可灵 API 最大并发数为 3，脚本已内置并发控制。
+
+### 详细文档
+
+参考 `references/kling-api-usage.md` 获取完整 API 说明。
+
 ## 错误处理
 
-### 常见错误及解决方案
+### 图片生成错误
 
 1. **Gemini API 密钥未设置**
    ```
@@ -347,6 +490,38 @@ ComfyUI 参数：
    解决: 下载所需模型到 ComfyUI/models 对应目录
    ```
 
+### 视频生成错误
+
+7. **可灵 API 密钥未设置**
+   ```
+   错误: 可灵API密钥未配置
+   解决: 在 .env 文件中配置 Kling_Access_Key 和 Kling_Secret_Key
+   ```
+
+8. **可灵 API 认证失败**
+   ```
+   错误: JWT Token 验证失败
+   解决: 检查 Access Key 和 Secret Key 是否正确
+   ```
+
+9. **可灵 API 任务超时**
+   ```
+   错误: 任务超时
+   解决: 可灵视频生成通常需要 90-120 秒，请耐心等待
+   ```
+
+10. **FFmpeg 未安装**
+    ```
+    错误: FFmpeg 不可用
+    解决: 安装 FFmpeg（Windows: choco install ffmpeg, macOS: brew install ffmpeg）
+    ```
+
+11. **视频拼接失败**
+    ```
+    错误: FFmpeg 执行失败
+    解决: 检查输入视频文件是否存在，确认视频格式兼容
+    ```
+
 ## 扩展风格
 
 在 `assets/styles/` 目录创建新的 `.md` 风格文件，按照现有风格文件格式编写。风格文件需包含：
@@ -360,23 +535,36 @@ ComfyUI 参数：
 
 ```
 ppt-generator/
-├── SKILL.md                    # 技能定义文件
+├── SKILL.md                              # 技能定义文件
 ├── scripts/
-│   ├── generate_ppt.py         # 核心生成脚本
-│   └── comfyui_client.py       # ComfyUI 客户端模块
+│   ├── generate_ppt.py                   # 图片生成脚本
+│   ├── comfyui_client.py                 # ComfyUI 客户端模块
+│   ├── kling_api.py                      # 可灵 API 封装
+│   ├── video_materials.py                # 视频素材生成模块
+│   ├── video_composer.py                 # FFmpeg 视频合成模块
+│   ├── generate_ppt_video.py             # 视频生成主流程脚本
+│   ├── transition_prompt_generator.py    # 转场提示词生成器（Claude API）
+│   ├── simple_transition_prompt_generator.py  # 简化版提示词生成器
+│   └── prompt_file_reader.py             # 提示词文件读取器
 ├── assets/
 │   ├── styles/
-│   │   ├── gradient-glass.md   # 渐变毛玻璃风格
-│   │   └── vector-illustration.md  # 矢量插画风格
+│   │   ├── gradient-glass.md             # 渐变毛玻璃风格
+│   │   └── vector-illustration.md        # 矢量插画风格
 │   ├── templates/
-│   │   └── viewer.html         # HTML5 播放器模板
-│   └── workflows/
-│       └── z_image_turbo_16x9.json  # ComfyUI 预设工作流
+│   │   ├── viewer.html                   # 图片 HTML5 播放器模板
+│   │   └── video_viewer.html             # 视频 HTML5 播放器模板
+│   ├── workflows/
+│   │   └── z_image_turbo_16x9.json       # ComfyUI 预设工作流
+│   └── prompts/
+│       └── transition_template.md        # 转场提示词模板
 └── references/
-    └── api-usage.md            # API 使用参考
+    ├── api-usage.md                      # Gemini API 使用参考
+    └── kling-api-usage.md                # 可灵 API 使用参考
 ```
 
 ## 最佳实践
+
+### 图片生成
 
 1. **文档质量**: 输入文档内容越清晰结构化，生成的 PPT 质量越高
 2. **页数选择**: 根据文档长度和演示场景合理选择页数
@@ -385,3 +573,12 @@ ppt-generator/
    - Gemini：适合快速生成，无需本地 GPU
    - ComfyUI：适合有 GPU 的用户，可自定义模型和参数
 5. **提示词调整**: 查看 `prompts.json` 了解生成逻辑，可手动调整后重新生成
+
+### 视频生成
+
+1. **图片优先**: 先生成满意的 PPT 图片，再生成视频
+2. **质量模式**: 首尾帧控制必须使用 `pro` 模式
+3. **时长选择**: 过渡视频推荐 5 秒，10 秒可能显得过长
+4. **并发控制**: 可灵 API 限制为 3 并发，脚本已自动控制
+5. **耐心等待**: 视频生成较慢，每个过渡约需 90-120 秒
+6. **提示词优化**: 如效果不佳，可使用 `--prompts-file` 提供自定义提示词
