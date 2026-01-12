@@ -10,6 +10,51 @@ import json
 import argparse
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
+
+
+def find_and_load_env():
+    """
+    智能查找并加载 .env 文件
+    优先级：
+    1. 当前脚本所在目录
+    2. 向上查找到项目根目录（包含 .git 或 .env 的目录）
+    3. 用户主目录下的 .claude/skills/ppt-generator/
+    """
+    current_dir = Path(__file__).parent
+
+    # 1. 尝试当前目录
+    if (current_dir / ".env").exists():
+        load_dotenv(current_dir / ".env", override=True)
+        print(f"✅ 已加载环境变量: {current_dir / '.env'}")
+        return True
+
+    # 2. 向上查找到项目根目录
+    for parent in current_dir.parents:
+        env_path = parent / ".env"
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ 已加载环境变量: {env_path}")
+            return True
+        # 如果找到 .git 目录，说明到达项目根目录
+        if (parent / ".git").exists():
+            break
+
+    # 3. 尝试 Claude Code Skill 标准位置
+    claude_skill_env = Path.home() / ".claude" / "skills" / "ppt-generator" / ".env"
+    if claude_skill_env.exists():
+        load_dotenv(claude_skill_env, override=True)
+        print(f"✅ 已加载环境变量: {claude_skill_env}")
+        return True
+
+    # 如果都没找到，尝试默认加载（可能从系统环境变量获取）
+    load_dotenv(override=True)
+    print("⚠️  未找到 .env 文件，尝试使用系统环境变量")
+    return False
+
+
+# 智能加载环境变量
+find_and_load_env()
 
 # 添加 skills 脚本目录到路径，以便导入 comfyui_client
 SCRIPT_DIR = Path(__file__).parent
