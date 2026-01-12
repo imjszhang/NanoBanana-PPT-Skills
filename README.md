@@ -20,9 +20,7 @@
 
 <div align="center">
 
-<video src="https://github.com/op7418/NanoBanana-PPT-Skills/raw/main/PPT-Skills-Demo.mp4" controls width="800">
-  您的浏览器不支持视频播放，请<a href="https://github.com/op7418/NanoBanana-PPT-Skills/raw/main/PPT-Skills-Demo.mp4">点击下载查看</a>
-</video>
+https://github.com/user-attachments/assets/b394de21-2848-489a-8d33-a8e262e60f60
 
 *AI 自动生成 PPT 并添加流畅转场动画 - 从文档分析到视频合成一键完成*
 
